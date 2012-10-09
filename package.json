@@ -1,0 +1,13 @@
+{
+  "name": "node-pool-server",
+  "description": "a simple getwork server in node",
+  "version": "0.0.1",
+  "private": true,
+  "dependencies": {
+    "express": "3.x",
+	"bitcoin": "x.x",
+	"jsonrpc": "x.x",
+	"winston": "0.6.2",
+	"http-auth": ">= 1.2.2"
+  }
+}
