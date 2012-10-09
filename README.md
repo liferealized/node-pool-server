@@ -3,7 +3,7 @@ node-pool-server
 
 Small app to sit in front of bitcoind to solo mine on.
 
-To run the app, first install node.js in your environment at close this repo to your server. Once completed, run:
+To run the app, first install node.js in your environment and clone this repo to your server. Once completed, run:
 
 ``` js
   npm install
