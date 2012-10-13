@@ -1,3 +1,9 @@
+// rename this file to bitcoin-rpc.js so that we can include getBlockTemplate
+// TODO: split out the work submission into a new method _submitGetWork(submission)
+// TODO: create a new method to handle getBlockTemplate() requests
+// TODO: create the method _submitBlockTemplate(submission)
+// change file to use a self invoking annon func like coffeescript writes them out
+
 var   logger = require('./logger')
 	, bitcoin = require('bitcoin')
 	, config = require('./config');
