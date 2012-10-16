@@ -1,5 +1,4 @@
 // rename this file to bitcoin-rpc.js so that we can include getBlockTemplate
-// TODO: split out the work submission into a new method _submitGetWork(submission)
 // TODO: create a new method to handle getBlockTemplate() requests
 // TODO: create the method _submitBlockTemplate(submission)
 // change file to use a self invoking annon func like coffeescript writes them out
@@ -17,58 +16,43 @@ GetWorkRPC.prototype.getwork = function(rpc, workSubmission) {
 
 	var self = this;
 	
-	if (!workSubmission)
+	if (workSubmission)
 	{
-		var miningExtensions = this._extractAllowedMiningExtensions(rpc.HTTPRequest);
+		this._submitGetWork(rpc, workSubmission);
+		return;
+	}
+
+	var miningExtensions = this._extractAllowedMiningExtensions(rpc.HTTPRequest);
+	
+	// we have a getwork request so make the call without any params
+	self.bitcoinClient.getWork(function(err, work) {
 		
-		// we have a getwork request so make the call without any params
-		self.bitcoinClient.getWork(function(err, work) {
-			
-			if (err)
-			{ 
-				rpc.error('Getwork request failed.');
-				logger.error('work request failed', { by: rpc.HTTPRequest.ip });
-				return; 
-			}
-			
-			if (miningExtensions.longpoll)
-				rpc.HTTPResponse.set('X-Long-Polling', '/lp');
-			
-			if (miningExtensions.rollntime && config.getwork.rollntime.enabled)
-				rpc.HTTPResponse.set('X-Roll-NTime', 'expire=' + config.getwork.rollntime.expire.toString());
-			
-			// set a new target for the work to be submitted
-			work.target = config.getwork.target;
-			
-			// if the client can calculate the midstate, remove it from the message
-			if (miningExtensions.midstate)
-				delete work['midstate'];
-			
-			// tell the miners to submit old work
-			if (miningExtensions.submitold)
-				work.submitold = config.getwork.submitold;
-			
-			rpc.response(work);
-		});
-	}
-	else
-	{
-		// we have a getwork request so make the call without any params
-		self.bitcoinClient.getWork(workSubmission, function(err, result) {
-			
-			if (err)
-			{ 
-				rpc.error('Getwork submission failed.');
-				logger.error('work submit failed', { by: rpc.HTTPRequest.ip, submission: workSubmission});
-				return; 
-			}
-			
-			if (result)
-				logger.info('work submit', { by: rpc.HTTPRequest.ip, submission: workSubmission, winner: result});
-			
-			rpc.response(true);
-		});
-	}
+		if (err)
+		{ 
+			rpc.error('Getwork request failed.');
+			logger.error('work request failed', { by: rpc.HTTPRequest.ip });
+			return; 
+		}
+		
+		if (miningExtensions.longpoll)
+			rpc.HTTPResponse.set('X-Long-Polling', '/lp');
+		
+		if (miningExtensions.rollntime && config.getwork.rollntime.enabled)
+			rpc.HTTPResponse.set('X-Roll-NTime', 'expire=' + config.getwork.rollntime.expire.toString());
+		
+		// set a new target for the work to be submitted
+		work.target = config.getwork.target;
+		
+		// if the client can calculate the midstate, remove it from the message
+		if (miningExtensions.midstate)
+			delete work['midstate'];
+		
+		// tell the miners to submit old work
+		if (miningExtensions.submitold)
+			work.submitold = config.getwork.submitold;
+		
+		rpc.response(work);
+	});
 };
 
 GetWorkRPC.prototype._extractAllowedMiningExtensions = function(req) {
@@ -85,8 +69,27 @@ GetWorkRPC.prototype._extractAllowedMiningExtensions = function(req) {
 	return miningExtensions;
 };
 
+GetWorkRPC.prototype._submitGetWork = function(rpc, workSubmission) {
+
+	// we have a getwork request so make the call without any params
+	self.bitcoinClient.getWork(workSubmission, function(err, result) {
+		
+		if (err)
+		{ 
+			rpc.error('Getwork submission failed.');
+			logger.error('work submit failed', { by: rpc.HTTPRequest.ip, submission: workSubmission});
+			return; 
+		}
+		
+		if (result)
+			logger.info('work submit', { by: rpc.HTTPRequest.ip, submission: workSubmission, winner: result});
+		
+		rpc.response(true);
+	});	
+};
+
 // export our rpc handler and rpc methods
-module.exports = GetWorkRPC;
+module.exports = BitcoinRPC;
 
 
 
