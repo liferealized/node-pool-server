@@ -4,6 +4,8 @@ var   logger = require('./logger')
 function LongPoll(client) {
 	
 	// stacked long poll requests
+	this.retries = 2;
+	this.retryAttempts = 0;
 	this.requests = [];
 	this.blockcount = -1;
 	this.bitcoinClient = client;
@@ -96,6 +98,8 @@ LongPoll.prototype.startInterval = function(interval) {
 					});
 				}
 			}
+
+			self.retries = 0;
 		});
 	}, interval);
 	

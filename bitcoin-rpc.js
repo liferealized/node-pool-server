@@ -7,25 +7,32 @@ var   logger = require('./logger')
 	, bitcoin = require('bitcoin')
 	, config = require('./config');
 	
-var GetWorkRPC = function(client) {
+var BitcoinRPC = function(client) {
 
-	this.bitcoinClient = client;
+	this.rpcClient = client;
 };
 
-GetWorkRPC.prototype.getwork = function(rpc, workSubmission) {
+BitcoinRPC.prototype.getblocktemplate = function(rpc, capabilities) {
 
-	var self = this;
-	
+	this.rpcClient.getBlockTemplate(capabilities, function(err, work) {
+
+		rpc.response(work);
+	});
+};
+
+BitcoinRPC.prototype.getwork = function(rpc, workSubmission) {
+
 	if (workSubmission)
 	{
-		this._submitGetWork(rpc, workSubmission);
+		this._submitgetwork(rpc, workSubmission);
 		return;
 	}
 
-	var miningExtensions = this._extractAllowedMiningExtensions(rpc.HTTPRequest);
+	var   self = this
+		, miningExtensions = this._extractAllowedMiningExtensions(rpc.HTTPRequest);
 	
 	// we have a getwork request so make the call without any params
-	self.bitcoinClient.getWork(function(err, work) {
+	self.rpcClient.getWork(function(err, work) {
 		
 		if (err)
 		{ 
@@ -55,7 +62,28 @@ GetWorkRPC.prototype.getwork = function(rpc, workSubmission) {
 	});
 };
 
-GetWorkRPC.prototype._extractAllowedMiningExtensions = function(req) {
+BitcoinRPC.prototype._submitgetwork = function(rpc, workSubmission) {
+
+	var   self = this;
+
+	// we have a getwork request so make the call without any params
+	self.rpcClient.getWork(workSubmission, function(err, result) {
+		
+		if (err)
+		{ 
+			rpc.error('Getwork submission failed.');
+			logger.error('work submit failed', { by: rpc.HTTPRequest.ip, submission: workSubmission});
+			return; 
+		}
+		
+		if (result)
+			logger.notice('work submit', { by: rpc.HTTPRequest.ip, submission: workSubmission, winner: result});
+		
+		rpc.response(true);
+	});	
+};
+
+BitcoinRPC.prototype._extractAllowedMiningExtensions = function(req) {
 
 	var   miningExtensions = { hostlist: false, longpoll: false, midstate: false, rollntime: false, submitold: false, switchto: false }
 		, headers = req.headers;
@@ -67,25 +95,6 @@ GetWorkRPC.prototype._extractAllowedMiningExtensions = function(req) {
 					miningExtensions[ext] = true;
 	
 	return miningExtensions;
-};
-
-GetWorkRPC.prototype._submitGetWork = function(rpc, workSubmission) {
-
-	// we have a getwork request so make the call without any params
-	self.bitcoinClient.getWork(workSubmission, function(err, result) {
-		
-		if (err)
-		{ 
-			rpc.error('Getwork submission failed.');
-			logger.error('work submit failed', { by: rpc.HTTPRequest.ip, submission: workSubmission});
-			return; 
-		}
-		
-		if (result)
-			logger.info('work submit', { by: rpc.HTTPRequest.ip, submission: workSubmission, winner: result});
-		
-		rpc.response(true);
-	});	
 };
 
 // export our rpc handler and rpc methods

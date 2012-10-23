@@ -4,14 +4,14 @@ var   express = require('express')
 	, config = require('./config')
 	, basicauth = require('./basic-auth')
 	, RPCHandler = require('jsonrpc').RPCHandler
-	, GetWorkRPC = require('./getwork-rpc')
+	, BitcoinRPC = require('./bitcoin-rpc')
 	, LongPoll = require('./longpoll');
 
 // get express and the bitcoin rpc client
 var   app = express()
 	, client = new bitcoin.Client(config.bitcoin)
 	, longpoll = new LongPoll(client).startInterval(config.longpoll.checkBlockCountInterval)
-	, getwork = new GetWorkRPC(client);
+	, bitcoinRpc = new BitcoinRPC(client);
 
 // run our basic authentication for all requests on our server
 app.use(function(req, res, next) {
@@ -21,10 +21,10 @@ app.use(function(req, res, next) {
 	});
 });
 
-// accept posts to the root for getwork and work submisssion
+// accept posts to the root for getwork and getblocktemplate work request/submisssion
 app.post('/', function(req, res) {
 	
-	new RPCHandler(req, res, getwork, true);
+	new RPCHandler(req, res, bitcoinRpc, true);
 }); 
 
 // accept posts to /lp to keep miners up to date on a bock change
